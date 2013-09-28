@@ -78,6 +78,7 @@ class GeekNote(object):
                 logging.error("Error: %s : %s", func.__name__, str(e))
 
                 if not hasattr(e, 'errorCode'):
+                    print e
                     out.failureMessage("Sorry, operation has failed!!!.")
                     tools.exit()
 
@@ -186,8 +187,9 @@ class GeekNote(object):
 
     @EdamException
     def createNote(self, title, content, tags=None, notebook=None, created=None, attributes=None):
-        na = Types.NoteAttributes()
+        na = None
         if attributes:
+            na = Types.NoteAttributes()
             for k, v in attributes.items():
                 setattr(na, k, v)
 
@@ -196,7 +198,7 @@ class GeekNote(object):
         note.content = content
         note.created = created
 
-        notes.attributes = na
+        note.attributes = na
 
         if tags:
             note.tagNames = tags
