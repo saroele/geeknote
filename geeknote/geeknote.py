@@ -78,7 +78,7 @@ class GeekNote(object):
                 logging.error("Error: %s : %s", func.__name__, str(e))
 
                 if not hasattr(e, 'errorCode'):
-                    print e
+                    print e, func.__name__, args, kwargs
                     out.failureMessage("Sorry, operation has failed!!!.")
                     tools.exit()
 
@@ -214,7 +214,9 @@ class GeekNote(object):
     @EdamException
     def updateNote(self, guid, title=None, content=None, tags=None, notebook=None, attributes=None):
         # allow us to pass in a note object instead
-        if isinstance(guid, Types.Note):
+        # due to the way evernote is imported via geeknote.lib
+        # the isinstance check won't work
+        if hasattr(guid, "title"):
             note = guid
             logging.debug("Update note : %s", note)
             self.getNoteStore().updateNote(self.authToken, note)
