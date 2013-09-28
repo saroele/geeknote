@@ -35,7 +35,8 @@ def textToENML(content, raise_ex=False):
         content = unicode(content,"utf-8")
         # add 2 space before new line in paragraph for cteating br tags
         content = re.sub(r'([^\r\n])([\r\n])([^\r\n])', r'\1  \n\3', content)
-        contentHTML = markdown.markdown(content).encode("utf-8")
+        md = markdown.Markdown(extensions=['meta'])
+        contentHTML = md.convert(content).encode("utf-8")
         # remove all new-lines characters in html
         contentHTML = re.sub(r'\n', r'', contentHTML)
         return wrapENML(contentHTML)

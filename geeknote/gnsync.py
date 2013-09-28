@@ -180,32 +180,28 @@ class GNSync:
 
     @log
     def _get_filedata(self, f):
-        content = self._get_file_content(f['path'])
-        if content is None:
-            return None
-
-        filedata = {}
-        filedata['content'] = content
-        filedata['title'] = f['name']
-
-        return filedata
-
-    @log
-    def _get_file_content(self, path):
-        """
-        Get file content.
-        """
-        content = open(path, "r").read()
-        content = editor.textToENML(content=content, raise_ex=True)
-        
+        content = open(f['path'], "r").read()
         if content is None:
             logger.warning("File {0}. Content must be an UTF-8 encode.".format(path))
             return None
 
-        return content
+        # kind of hacky Title getter
 
-    
-    
+        md = markdown.Markdown(extensions=['meta'])
+        html = md.convert(content).encode("utf-8")
+        meta = md.Meta
+        enml = editor.wrapENML(html)
+
+        filedata = {}
+        filedata['content'] = enml
+        filedata['title'] = f['name']
+        for k, v in meta.items():
+            if not v: continue
+            # metadata values are always lists
+            filedata[k] = v.pop()
+
+        return filedata
+
     @log  
     def _get_notebook(self, notebook_name, path):
         """
