@@ -185,11 +185,18 @@ class GeekNote(object):
         note.content = self.getNoteStore().getNoteContent(self.authToken, note.guid)
 
     @EdamException
-    def createNote(self, title, content, tags=None, notebook=None, created=None):
+    def createNote(self, title, content, tags=None, notebook=None, created=None, attributes=None):
+        na = Types.NoteAttributes()
+        if attributes:
+            for k, v in attributes.items():
+                setattr(na, key, v)
+
         note = Types.Note()
         note.title = title
         note.content = content
         note.created = created
+
+        notes.attributes = na
 
         if tags:
             note.tagNames = tags
@@ -203,9 +210,22 @@ class GeekNote(object):
         return True
 
     @EdamException
-    def updateNote(self, guid, title=None, content=None, tags=None, notebook=None):
+    def updateNote(self, guid, title=None, content=None, tags=None, notebook=None, attributes=None):
+        # allow us to pass in a note object instead
+        if isinstance(guid, Types.Note):
+            note = guid
+            logging.debug("Update note : %s", note)
+            self.getNoteStore().updateNote(self.authToken, note)
+            return True
+
+        na = Types.NoteAttributes()
+        if attributes:
+            for k, v in attributes.items():
+                setattr(na, key, v)
+
         note = Types.Note()
         note.guid = guid
+        note.attributes = na
         if title:
             note.title = title
 
