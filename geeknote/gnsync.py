@@ -113,17 +113,19 @@ class GNSync:
         files =  self._get_files()
         notes = self._get_notes()
 
-        for f in files:
-            has_note = False
+        def _match_note(f):
             for n in notes:
-                if f['name'] == n.title:
-                    has_note = True
-                    if f['mtime'] > n.updated:
-                        self._update_note(f, n)
-                        break
-                    
-            if not has_note :
-                self._create_note(f)
+                source = n.attributes.source or n.title 
+                if f['name'] == source:
+                    return n
+
+        for f in files:
+            n = _match_note(f)
+            if n:
+                if f['mtime'] > n.updated:
+                    self._update_note(f, n)
+                continue
+            self._create_note(f)
                 
         logger.info('Sync Complete')
     
@@ -132,13 +134,11 @@ class GNSync:
         """
         Updates note from file
         """
-        content = self._get_file_content(file_note['path'])
+        filedata = self._get_filedata(file_note)
         
-        result = GeekNote().updateNote(
-            guid=note.guid,
-            title=note.title,
-            content=content,
-            notebook=self.notebook_guid)
+        note.title = filedata['title']
+        note.content = filedata['content']
+        result = GeekNote().updateNote(note)
         
         if result:
             logger.info('Note "{0}" was updated'.format(note.title))
@@ -154,16 +154,22 @@ class GNSync:
         Creates note from file
         """
 
-        content = self._get_file_content(file_note['path'])
+        filedata = self._get_filedata(file_note)
 
-        if content is None:
+        if filedata is None:
             return
 
+        attrs = {}
+        attrs['sourceApplication'] = 'geeknote'
+        attrs['source'] = file_note['name']
+
         result = GeekNote().createNote(
-            title=file_note['name'],
-            content=content,
+            title=filedata['title'],
+            content=filedata['content'],
             notebook=self.notebook_guid,
-            created=file_note['mtime'])
+            created=file_note['mtime'], 
+            attributes=attrs
+        )
         
         if result:
             logger.info('Note "{0}" was created'.format(file_note['name']))
@@ -171,6 +177,18 @@ class GNSync:
             raise Exception('Note "{0}" was not created'.format(file_note['name']))
             
         return result
+
+    @log
+    def _get_filedata(self, f):
+        content = self._get_file_content(f['path'])
+        if content is None:
+            return None
+
+        filedata = {}
+        filedata['content'] = content
+        filedata['title'] = f['name']
+
+        return filedata
 
     @log
     def _get_file_content(self, path):
@@ -185,6 +203,8 @@ class GNSync:
             return None
 
         return content
+
+    
     
     @log  
     def _get_notebook(self, notebook_name, path):
