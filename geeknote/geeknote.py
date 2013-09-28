@@ -189,7 +189,7 @@ class GeekNote(object):
         na = Types.NoteAttributes()
         if attributes:
             for k, v in attributes.items():
-                setattr(na, key, v)
+                setattr(na, k, v)
 
         note = Types.Note()
         note.title = title
@@ -221,7 +221,7 @@ class GeekNote(object):
         na = Types.NoteAttributes()
         if attributes:
             for k, v in attributes.items():
-                setattr(na, key, v)
+                setattr(na, k, v)
 
         note = Types.Note()
         note.guid = guid
