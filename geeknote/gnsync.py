@@ -187,7 +187,7 @@ class GNSync:
 
         # kind of hacky Title getter
 
-        md = markdown.Markdown(extensions=['meta'])
+        md = markdown.Markdown(extensions=['meta', 'fenced_code'])
         html = md.convert(content).encode("utf-8")
         meta = md.Meta
         enml = editor.wrapENML(html)
