@@ -77,8 +77,8 @@ class GeekNote(object):
             except Exception, e:
                 logging.error("Error: %s : %s", func.__name__, str(e))
 
+                print e, func.__name__, args, kwargs
                 if not hasattr(e, 'errorCode'):
-                    print e, func.__name__, args, kwargs
                     out.failureMessage("Sorry, operation has failed!!!.")
                     tools.exit()
 
