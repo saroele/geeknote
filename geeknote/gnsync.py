@@ -185,11 +185,7 @@ class GNSync:
             logger.warning("File {0}. Content must be an UTF-8 encode.".format(path))
             return None
 
-        # kind of hacky Title getter
-
-        md = markdown.Markdown(extensions=['meta', 'fenced_code'])
-        html = md.convert(content).encode("utf-8")
-        meta = md.Meta
+        html, meta = editor.convert_markdown(content)
         enml = editor.wrapENML(html)
 
         filedata = {}

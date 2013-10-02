@@ -25,6 +25,17 @@ def wrapENML(contentHTML):
     body += '<en-note>%s</en-note>' % contentHTML
     return body
 
+def convert_markdown(content):
+    md = markdown.Markdown(extensions=['meta', 'fenced_code', 'markdown_checklist.extension'])
+    html = md.convert(content).encode("utf-8")
+    # convert markdown_checklist into evernote
+    # TODO create an evernote/markdown converter to skip the manual scrubbing
+    html = html.replace('<ul class="checklist">', '<ul>')
+    html = html.replace('<input type="checkbox" disabled>', '<en-todo/>')
+    html = html.replace('<input type="checkbox" disabled checked>', '<en-todo checked="true"/>')
+    meta = md.Meta
+    return html, meta
+
 def textToENML(content, raise_ex=False):
     """
     Create an ENML format of note.
@@ -35,8 +46,7 @@ def textToENML(content, raise_ex=False):
         content = unicode(content,"utf-8")
         # add 2 space before new line in paragraph for cteating br tags
         content = re.sub(r'([^\r\n])([\r\n])([^\r\n])', r'\1  \n\3', content)
-        md = markdown.Markdown(extensions=['meta', 'fenced_code'])
-        contentHTML = md.convert(content).encode("utf-8")
+        contentHTML, meta = convert_markdown(content)
         # remove all new-lines characters in html
         contentHTML = re.sub(r'\n', r'', contentHTML)
         return wrapENML(contentHTML)
