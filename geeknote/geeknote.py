@@ -115,7 +115,7 @@ class GeekNote(object):
         userStoreHttpClient = THttpClient.THttpClient(self.userStoreUri)
         userStoreProtocol = TBinaryProtocol.TBinaryProtocol(userStoreHttpClient)
         GeekNote.userStore = UserStore.Client(userStoreProtocol)
-    
+
         self.checkVersion()
 
         return GeekNote.userStore
@@ -162,13 +162,13 @@ class GeekNote(object):
 
     def removeUser(self):
         return self.getStorage().removeUser()
-    
+
     """
     WORK WITH NOTEST
     """
     @EdamException
     def findNotes(self, keywords, count, createOrder=False):
-        
+
         noteFilter = NoteStore.NoteFilter(order=Types.NoteSortOrder.RELEVANCE)
         if createOrder:
             noteFilter.order = Types.NoteSortOrder.CREATED
@@ -209,7 +209,7 @@ class GeekNote(object):
         logging.debug("New note : %s", note)
 
         self.getNoteStore().createNote(self.authToken, note)
-        return True
+        return note
 
     @EdamException
     def updateNote(self, guid, title=None, content=None, tags=None, notebook=None, attributes=None):
@@ -220,7 +220,7 @@ class GeekNote(object):
             note = guid
             logging.debug("Update note : %s", note)
             self.getNoteStore().updateNote(self.authToken, note)
-            return True
+            return note
 
         na = Types.NoteAttributes()
         if attributes:
@@ -245,7 +245,7 @@ class GeekNote(object):
         logging.debug("Update note : %s", note)
 
         self.getNoteStore().updateNote(self.authToken, note)
-        return True
+        return note
 
     @EdamException
     def removeNote(self, guid):
@@ -532,7 +532,7 @@ class Notebooks(GeekNoteConnector):
 
 class Notes(GeekNoteConnector):
     """ Work with Notes """
-    
+
     findExactOnUpdate = False
     selectFirstOnUpdate = False
     def __init__(self, findExactOnUpdate=False, selectFirstOnUpdate=False):
@@ -559,7 +559,7 @@ class Notes(GeekNoteConnector):
         note = self._searchNote(note)
 
         inputData = self._parceInput(title, content, tags, notebook, note)
-        
+
         out.preloader.setMessage("Saving note...")
         result = self.getEvernote().updateNote(guid=note.guid, **inputData)
 
@@ -589,7 +589,7 @@ class Notes(GeekNoteConnector):
         self.connectToEvertone()
 
         note = self._searchNote(note)
-        
+
         out.preloader.setMessage("Loading note...")
         self.getEvernote().loadNoteContent(note)
 
@@ -637,7 +637,7 @@ class Notes(GeekNoteConnector):
             if notepadGuid is None:
                 newNotepad = Notebooks().create(notebook)
                 notepadGuid = newNotepad.guid
-            
+
             result['notebook'] = notepadGuid
             logging.debug("Search notebook")
 
@@ -666,7 +666,7 @@ class Notes(GeekNoteConnector):
                 note = result.notes[0]
 
             else:
-                logging.debug("Choose notes: %s" % str(result.notes)) 
+                logging.debug("Choose notes: %s" % str(result.notes))
                 note = out.SelectSearchResult(result.notes)
 
         logging.debug("Selected note: %s" % str(note))
@@ -732,7 +732,7 @@ class Notes(GeekNoteConnector):
                 search = '"%s"' % search
 
             if content_search:
-                request += "%s" % search 
+                request += "%s" % search
             else:
                 request += "intitle:%s" % search
 
