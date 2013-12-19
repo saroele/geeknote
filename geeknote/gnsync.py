@@ -37,85 +37,85 @@ def reset_logpath(logpath):
     Reset logpath to path from command line
     """
     global logger
-    
+
     if not logpath:
         return
-    
+
     # remove temporary log file if it's empty
     if os.path.isfile(def_logpath):
         if os.path.getsize(def_logpath) == 0:
             os.remove(def_logpath)
-    
-    # save previous handlers    
+
+    # save previous handlers
     handlers = logger.handlers
-    
+
     # remove old handlers
     for handler in handlers:
         logger.removeHandler(handler)
-        
+
     # try to set new file handler
     handler = logging.FileHandler(logpath)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
 class GNSync:
-    
+
     notebook_name = None
     path = None
     mask = None
-    
+
     notebook_guid = None
     all_set = False
-    
+
     @log
     def __init__(self, notebook_name, path, mask, format):
         # check auth
         if not Storage().getUserToken():
             raise Exception("Auth error. There is not any oAuthToken.")
-            
+
         #set path
         if not path:
             raise Exception("Path to sync directories does not select.")
-        
+
         if not os.path.exists(path):
             raise Exception("Path to sync directories does not exist.")
-        
+
         self.path = path
-            
+
         #set mask
         if not mask:
             mask = "*.*"
-            
+
         self.mask = mask
 
         #set format
         if not format:
             format = "plain"
-            
+
         self.format = format
-        
+
         logger.info('Sync Start')
-         
+
         #set notebook
         self.notebook_guid, self.notebook_name = self._get_notebook(notebook_name, path)
-        
+
         # all is Ok
         self.all_set = True
-    
+
     @log
     def sync(self):
         """
-        Synchronize files to notes 
+        Synchronize files to notes
         """
         if not self.all_set:
             return
-        
+
         files =  self._get_files()
         notes = self._get_notes()
 
         def _match_note(f):
             for n in notes:
-                source = n.attributes.source or n.title 
+                source = n.attributes.source or n.title
                 if f['name'] == source:
                     return n
 
@@ -126,29 +126,30 @@ class GNSync:
                     self._update_note(f, n)
                 continue
             self._create_note(f)
-                
+
         logger.info('Sync Complete')
-    
+
     @log
     def _update_note(self, file_note, note):
         """
         Updates note from file
         """
         filedata = self._get_filedata(file_note)
-        
+
         note.title = filedata['title']
         note.content = filedata['content']
         result = GeekNote().updateNote(note)
-        
+
         if result:
+            self.add_evernote_guid(filedata, note.guid)
             logger.info('Note "{0}" was updated'.format(note.title))
         else:
             raise Exception('Note "{0}" was not updated'.format(note.title))
-            
+
         return result
-        
-    
-    @log  
+
+
+    @log
     def _create_note(self, file_note):
         """
         Creates note from file
@@ -163,20 +164,28 @@ class GNSync:
         attrs['sourceApplication'] = 'geeknote'
         attrs['source'] = file_note['name']
 
-        result = GeekNote().createNote(
+        note = GeekNote().createNote(
             title=filedata['title'],
             content=filedata['content'],
             notebook=self.notebook_guid,
-            created=file_note['mtime'], 
+            created=file_note['mtime'],
             attributes=attrs
         )
-        
-        if result:
+
+
+        if note:
+            self.add_evernote_guid(filedata, note.guid)
             logger.info('Note "{0}" was created'.format(file_note['name']))
         else:
             raise Exception('Note "{0}" was not created'.format(file_note['name']))
-            
+
         return result
+
+    def add_evernote_guid(self, filedata, guid):
+        """ Check if guid is in markdown meta, add if not"""
+        md = filedata['md']
+        print md
+        print guid
 
     @log
     def _get_filedata(self, f):
@@ -185,7 +194,8 @@ class GNSync:
             logger.warning("File {0}. Content must be an UTF-8 encode.".format(path))
             return None
 
-        html, meta = editor.convert_markdown(content)
+        html, md = editor.convert_markdown(content)
+        meta = md.Meta
         enml = editor.wrapENML(html)
 
         filedata = {}
@@ -196,9 +206,10 @@ class GNSync:
             # metadata values are always lists
             filedata[k] = v.pop()
 
+        filedata['md'] = md
         return filedata
 
-    @log  
+    @log
     def _get_notebook(self, notebook_name, path):
         """
         Get notebook guid and name. Takes default notebook if notebook's name does not
@@ -208,52 +219,52 @@ class GNSync:
 
         if not notebook_name:
             notebook_name = os.path.basename(os.path.realpath(path))
-        
+
         notebook = [item for item in notebooks if item.name == notebook_name]
         guid = None
         if notebook:
             guid = notebook[0].guid
-        
+
         if not guid:
             notebook = GeekNote().createNotebook(notebook_name)
-            
+
             if(notebook):
                 logger.info('Notebook "{0}" was created'.format(notebook_name))
             else:
                 raise Exception('Notebook "{0}" was not created'.format(notebook_name))
-                
+
             guid = notebook.guid
-            
+
         return (guid, notebook_name)
-    
-    @log             
+
+    @log
     def _get_files(self):
         """
         Get files by self.mask from self.path dir.
-        """ 
-    
+        """
+
         file_paths = glob.glob(os.path.join(self.path, self.mask))
-        
+
         files = []
         for f in file_paths:
             if os.path.isfile(f):
                 file_name = os.path.basename(f)
                 file_name = os.path.splitext(file_name)[0]
-                
+
                 mtime = int(os.path.getmtime(f) * 1000)
-                
+
                 files.append({'path': f,'name': file_name, 'mtime': mtime})
-        
+
         return files
-    
-    @log 
+
+    @log
     def _get_notes(self):
         """
         Get notes from evernote.
-        """        
+        """
         keywords = 'notebook:"{0}"'.format(tools.strip(self.notebook_name))
         return GeekNote().findNotes(keywords, 10000).notes
-            
+
 
 def main():
     try:
@@ -263,17 +274,17 @@ def main():
         parser.add_argument('--format', '-f', action='store', default='plain', choices=['plain', 'markdown'], help='The format of the file contents. Default is "plain". Valid values ​​are "plain" and "markdown"')
         parser.add_argument('--notebook', '-n', action='store', help='Notebook name for synchronize. Default is default notebook')
         parser.add_argument('--logpath', '-l', action='store', help='Path to log file. Default is GeekNoteSync in home dir')
-        
+
         args = parser.parse_args()
-    
+
         path = args.path if args.path else None
         mask = args.mask if args.mask else None
         format = args.format if args.format else None
         notebook = args.notebook if args.notebook else None
         logpath = args.logpath if args.logpath else None
-        
+
         reset_logpath(logpath)
-        
+
         GNS = GNSync(notebook, path, mask, format)
         GNS.sync()
 
