@@ -12,6 +12,7 @@ import re
 import config
 from storage import Storage
 from log import logging
+from fenced_code import FencedCodeExtension
 
 
 def ENMLtoText(contentENML):
@@ -26,7 +27,7 @@ def wrapENML(contentHTML):
     return body
 
 def convert_markdown(content):
-    md = markdown.Markdown(extensions=['meta', 'fenced_code', 'markdown_checklist.extension'])
+    md = markdown.Markdown(extensions=['meta', FencedCodeExtension(), 'markdown_checklist.extension'])
     html = md.convert(content).encode("utf-8")
     # convert markdown_checklist into evernote
     # TODO create an evernote/markdown converter to skip the manual scrubbing
@@ -53,7 +54,7 @@ def textToENML(content, raise_ex=False):
     except:
         if raise_ex:
             raise Exception("Error while parsing text to html. Content must be an UTF-8 encode.")
-            
+
         logging.error("Error while parsing text to html. Content must be an UTF-8 encode.")
         out.failureMessage("Error while parsing text to html. Content must be an UTF-8 encode.")
         return tools.exit()
@@ -70,14 +71,14 @@ def edit(content=None):
         raise Exception("Note content must be an instanse of string, '%s' given." % type(content))
 
     (tmpFileHandler, tmpFileName) = tempfile.mkstemp()
-    
+
     os.write(tmpFileHandler, ENMLtoText(content))
     os.close(tmpFileHandler)
-    
+
     # Try to find default editor in the system.
     storage = Storage()
     editor = storage.getUserprop('editor')
-    
+
     if not editor:
         # If default editor is not finded, then use nano as a default.
         if sys.platform == 'win32':

@@ -48,8 +48,6 @@ class FencedBlockPreprocessor(Preprocessor):
             m = FENCED_BLOCK_RE.search(text)
             if m:
                 lang = ''
-                if m.group('lang'):
-                    lang = LANG_TAG % m.group('lang')
 
                 # If config is not empty, then the codehighlite extension
                 # is enabled, so we call it to highlite the code
