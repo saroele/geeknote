@@ -56,11 +56,11 @@ class MetaPreprocessor(Preprocessor):
         self.markdown.MetaContent = lines[:]
         return lines
 
-def add_evernote_id(content, md, evernote_id):
+def add_evernote_guid(content, md, evernote_id):
     meta = md.Meta
     meta_lines = md.MetaLines
 
-    if 'EvernoteGUID' in meta:
+    if 'evernoteguid' in meta:
         return
 
     outlines = []
