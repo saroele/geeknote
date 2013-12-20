@@ -15,6 +15,8 @@ from log import logging
 from fenced_code import FencedCodeExtension
 from meta import MetaExtension
 
+import pdb
+
 
 def ENMLtoText(contentENML):
     content = html2text.html2text(contentENML.decode('utf-8'))
@@ -41,18 +43,20 @@ def textToENML(content, raise_ex=False):
     """
     Create an ENML format of note.
     """
+    pdb.set_trace()    
     if not isinstance(content, str):
         content = ""
     try:
         content = unicode(content,"utf-8")
         # add 2 space before new line in paragraph for cteating br tags
         content = re.sub(r'([^\r\n])([\r\n])([^\r\n])', r'\1  \n\3', content)
-        contentHTML, md = convert_markdown(content)
-        meta = md.Meta
+        #contentHTML, md = convert_markdown(content)
+        #meta = md.Meta
         # remove all new-lines characters in html
-        contentHTML = re.sub(r'\n', r'', contentHTML)
+        contentHTML = re.sub(r'\n', r'', content)
         return wrapENML(contentHTML)
     except:
+        raise        
         if raise_ex:
             raise Exception("Error while parsing text to html. Content must be an UTF-8 encode.")
 
