@@ -208,7 +208,7 @@ class GeekNote(object):
 
         logging.debug("New note : %s", note)
 
-        self.getNoteStore().createNote(self.authToken, note)
+        note = self.getNoteStore().createNote(self.authToken, note)
         return note
 
     @EdamException
