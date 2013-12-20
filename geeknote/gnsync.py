@@ -12,6 +12,7 @@ from geeknote import GeekNote
 from storage import Storage
 import editor
 import tools
+import meta as metamod
 
 # set default logger (write log to file)
 def_logpath = os.path.join(os.getenv('USERPROFILE') or os.getenv('HOME'),  'GeekNoteSync.log')
@@ -113,21 +114,38 @@ class GNSync:
         files =  self._get_files()
         notes = self._get_notes()
 
-        def _match_note(f):
+        def _match_note(f, filedata):
             for n in notes:
-                source = n.attributes.source or n.title
-                if f['name'] == source:
+                # try to match on guid
+                if n.guid == filedata.get('evernoteguid', None):
                     return n
 
-        for f in files:
-            n = _match_note(f)
-            if n:
-                if f['mtime'] > n.updated:
-                    self._update_note(f, n)
-                continue
-            self._create_note(f)
+        for file_note in files:
+            filedata = self._get_filedata(file_note)
+            note = _match_note(file_note, filedata)
+            note = self._process_note(file_note, note)
+            assert note.guid is not None
+            self.add_evernote_guid(filedata, note.guid)
 
         logger.info('Sync Complete')
+
+    def _process_note(self, f, n):
+        if n:
+            if f['mtime'] > n.updated:
+                self._update_note(f, n)
+            return n
+        return self._create_note(f)
+
+    def add_evernote_guid(self, filedata, guid):
+        """ Check if guid is in markdown meta, add if not"""
+        content = filedata['content']
+        md = filedata['md']
+        out = metamod.add_evernote_guid(content, md, guid)
+        if not out:
+            return
+        with open(filedata['path'], 'w') as file:
+            file.write(out)
+        print filedata['title'], 'updated with EvernoteGUID'
 
     @log
     def _update_note(self, file_note, note):
@@ -141,13 +159,11 @@ class GNSync:
         result = GeekNote().updateNote(note)
 
         if result:
-            self.add_evernote_guid(filedata, note.guid)
             logger.info('Note "{0}" was updated'.format(note.title))
         else:
             raise Exception('Note "{0}" was not updated'.format(note.title))
 
         return result
-
 
     @log
     def _create_note(self, file_note):
@@ -174,18 +190,11 @@ class GNSync:
 
 
         if note:
-            self.add_evernote_guid(filedata, note.guid)
             logger.info('Note "{0}" was created'.format(file_note['name']))
         else:
             raise Exception('Note "{0}" was not created'.format(file_note['name']))
 
-        return result
-
-    def add_evernote_guid(self, filedata, guid):
-        """ Check if guid is in markdown meta, add if not"""
-        md = filedata['md']
-        print md
-        print guid
+        return note
 
     @log
     def _get_filedata(self, f):
@@ -207,6 +216,7 @@ class GNSync:
             filedata[k] = v.pop()
 
         filedata['md'] = md
+        filedata['path'] = f['path']
         return filedata
 
     @log
