@@ -13,6 +13,7 @@ import config
 from storage import Storage
 from log import logging
 from fenced_code import FencedCodeExtension
+from meta import MetaExtension
 
 
 def ENMLtoText(contentENML):
@@ -27,15 +28,14 @@ def wrapENML(contentHTML):
     return body
 
 def convert_markdown(content):
-    md = markdown.Markdown(extensions=['meta', FencedCodeExtension(), 'markdown_checklist.extension'])
+    md = markdown.Markdown(extensions=[MetaExtension(), FencedCodeExtension(), 'markdown_checklist.extension'])
     html = md.convert(content).encode("utf-8")
     # convert markdown_checklist into evernote
     # TODO create an evernote/markdown converter to skip the manual scrubbing
     html = html.replace('<ul class="checklist">', '<ul>')
     html = html.replace('<input type="checkbox" disabled>', '<en-todo/>')
     html = html.replace('<input type="checkbox" disabled checked>', '<en-todo checked="true"/>')
-    meta = md.Meta
-    return html, meta
+    return html, md
 
 def textToENML(content, raise_ex=False):
     """
@@ -47,7 +47,8 @@ def textToENML(content, raise_ex=False):
         content = unicode(content,"utf-8")
         # add 2 space before new line in paragraph for cteating br tags
         content = re.sub(r'([^\r\n])([\r\n])([^\r\n])', r'\1  \n\3', content)
-        contentHTML, meta = convert_markdown(content)
+        contentHTML, md = convert_markdown(content)
+        meta = md.Meta
         # remove all new-lines characters in html
         contentHTML = re.sub(r'\n', r'', contentHTML)
         return wrapENML(contentHTML)
